@@ -4,8 +4,12 @@ import Foundation
 class GBFSService: ObservableObject {
     static let shared = GBFSService()
 
-    private let stationInfoURL = URL(string: "https://gbfs.lyft.com/gbfs/2.3/bay/en/station_information.json")!
-    private let stationStatusURL = URL(string: "https://gbfs.lyft.com/gbfs/2.3/bay/en/station_status.json")!
+    private var stationInfoURL: URL {
+        URL(string: "\(Preferences.shared.gbfsRoot)/station_information.json")!
+    }
+    private var stationStatusURL: URL {
+        URL(string: "\(Preferences.shared.gbfsRoot)/station_status.json")!
+    }
 
     @Published var stationInfos: [String: StationInfo] = [:]
     @Published var stationStatuses: [String: StationStatus] = [:]

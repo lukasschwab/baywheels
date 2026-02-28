@@ -12,11 +12,23 @@ class Preferences: ObservableObject {
         static let range = "baywheels-range"
         static let favorites = "baywheels-favorites"
         static let favoriteOrder = "baywheels-favorite-order"
+        static let gbfsRoot = "baywheels-gbfs-root"
     }
 
     @Published var mode: AppMode {
         didSet {
             defaults.set(mode.rawValue, forKey: Keys.mode)
+        }
+    }
+
+    static let defaultGBFSRoot = "https://gbfs.lyft.com/gbfs/2.3/bay/en"
+
+    /// GBFS root URL (without trailing slash).
+    @Published var gbfsRoot: String {
+        didSet {
+            let trimmed = gbfsRoot.hasSuffix("/") ? String(gbfsRoot.dropLast()) : gbfsRoot
+            if trimmed != gbfsRoot { gbfsRoot = trimmed }
+            defaults.set(gbfsRoot, forKey: Keys.gbfsRoot)
         }
     }
 
@@ -46,6 +58,7 @@ class Preferences: ObservableObject {
     private init() {
         let modeStr = defaults.string(forKey: Keys.mode) ?? AppMode.nearby.rawValue
         self.mode = AppMode(rawValue: modeStr) ?? .nearby
+        self.gbfsRoot = defaults.string(forKey: Keys.gbfsRoot) ?? Preferences.defaultGBFSRoot
         self.range = defaults.double(forKey: Keys.range).nonZero ?? 500
         self.favorites = Set(defaults.stringArray(forKey: Keys.favorites) ?? [])
         self.favoriteOrder = defaults.stringArray(forKey: Keys.favoriteOrder) ?? []

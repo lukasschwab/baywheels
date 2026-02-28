@@ -34,8 +34,15 @@ struct PreferencesView: View {
             favoritesSettings
                 .opacity(prefs.mode == .favorites ? 1.0 : 0.5)
                 .allowsHitTesting(prefs.mode == .favorites)
+
+            Divider()
+
+            // GBFS feed URL
+            gbfsSettings
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
         }
-        .frame(width: 380, height: 620)
+        .frame(width: 380, height: 660)
     }
 
     // MARK: - Mode Toggle
@@ -148,6 +155,28 @@ struct PreferencesView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - GBFS Settings
+
+    private var gbfsSettings: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("GBFS Feed")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if prefs.gbfsRoot != Preferences.defaultGBFSRoot {
+                    Button("Reset") {
+                        prefs.gbfsRoot = Preferences.defaultGBFSRoot
+                    }
+                    .font(.caption)
+                }
+            }
+            TextField(Preferences.defaultGBFSRoot, text: $prefs.gbfsRoot)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11, design: .monospaced))
         }
     }
 

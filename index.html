@@ -55,10 +55,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: pointer;
             transition: box-shadow 0.2s, transform 0.15s, opacity 0.15s;
         }
-        .station:hover {
+        .station.clickable {
+            cursor: pointer;
+        }
+        .station.clickable:hover {
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .station.selected {
@@ -79,6 +81,8 @@
             color: #aaa;
             font-size: 1.2em;
             user-select: none;
+            align-self: flex-start;
+            margin-top: -4px;
         }
         .drag-handle:hover {
             color: #666;
@@ -182,11 +186,14 @@
         .ebike .count-value {
             color: #0a0;
         }
-        .classic .count-value {
-            color: #666;
-        }
+        .classic .count-value,
         .docks .count-value {
-            color: #06c;
+            color: #999;
+            font-size: 1.1em;
+        }
+        .classic .count-label,
+        .docks .count-label {
+            color: #aaa;
         }
         .favorites {
             margin-bottom: 30px;
@@ -533,7 +540,7 @@
             const docks = status.num_docks_available || 0;
             
             const div = document.createElement('div');
-            div.className = 'station' + (favorites.has(stationId) ? ' selected' : '');
+            div.className = 'station clickable' + (favorites.has(stationId) ? ' selected' : '');
             div.dataset.stationId = stationId;
             
             const handleHtml = isFavorite 

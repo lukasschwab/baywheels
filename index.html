@@ -93,6 +93,74 @@
             font-weight: 600;
             margin-bottom: 4px;
         }
+        .station-nickname {
+            color: #e00;
+            font-weight: 600;
+        }
+        .station-official-name {
+            color: #666;
+            font-size: 0.85em;
+        }
+        .edit-nickname {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: #aaa;
+            padding: 2px 6px;
+            margin-left: 4px;
+            border-radius: 3px;
+        }
+        .edit-nickname:hover {
+            background: #eee;
+            color: #666;
+        }
+        .nickname-input {
+            font-size: 0.95em;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 8px;
+        }
+        .nickname-input:focus {
+            outline: none;
+            border-color: #e00;
+        }
+        .nickname-save, .nickname-cancel {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-right: 4px;
+        }
+        .nickname-save {
+            background: #e00;
+            color: white;
+        }
+        .nickname-save:hover {
+            background: #c00;
+        }
+        .nickname-cancel {
+            background: #eee;
+            color: #666;
+        }
+        .nickname-cancel:hover {
+            background: #ddd;
+        }
+        .nickname-clear {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            background: none;
+            color: #999;
+        }
+        .nickname-clear:hover {
+            color: #c00;
+        }
         .station-meta {
             font-size: 0.85em;
             color: #666;
@@ -320,6 +388,95 @@
         let stationInfo = {};
         let stationStatus = {};
         let favorites = new Set(JSON.parse(localStorage.getItem('baywheels-favorites') || '[]'));
+        let nicknames = JSON.parse(localStorage.getItem('baywheels-nicknames') || '{}');
+        
+        function saveNicknames() {
+            localStorage.setItem('baywheels-nicknames', JSON.stringify(nicknames));
+        }
+        
+        function setNickname(stationId, nickname) {
+            if (nickname && nickname.trim()) {
+                nicknames[stationId] = nickname.trim();
+            } else {
+                delete nicknames[stationId];
+            }
+            saveNicknames();
+            render();
+            renderNearby();
+        }
+        
+        function showNicknameEditor(stationId, buttonEl) {
+            // Prevent event bubbling
+            event.stopPropagation();
+            
+            const info = stationInfo[stationId];
+            const currentNickname = nicknames[stationId] || '';
+            
+            // Create editor inline
+            const stationEl = buttonEl.closest('.station');
+            const nameEl = stationEl.querySelector('.station-info');
+            const originalContent = nameEl.innerHTML;
+            
+            nameEl.innerHTML = `
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <input type="text" class="nickname-input" 
+                           placeholder="Enter nickname..." 
+                           value="${currentNickname}">
+                    <div>
+                        <button class="nickname-save">Save</button>
+                        <button class="nickname-cancel">Cancel</button>
+                        ${currentNickname ? '<button class="nickname-clear">Clear</button>' : ''}
+                    </div>
+                </div>
+                <div class="station-meta" style="margin-top: 4px;">${info.name}</div>
+            `;
+            
+            const input = nameEl.querySelector('.nickname-input');
+            input.focus();
+            input.select();
+            
+            // Handle save
+            nameEl.querySelector('.nickname-save').onclick = (e) => {
+                e.stopPropagation();
+                setNickname(stationId, input.value);
+            };
+            
+            // Handle cancel
+            nameEl.querySelector('.nickname-cancel').onclick = (e) => {
+                e.stopPropagation();
+                nameEl.innerHTML = originalContent;
+            };
+            
+            // Handle clear
+            const clearBtn = nameEl.querySelector('.nickname-clear');
+            if (clearBtn) {
+                clearBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    setNickname(stationId, null);
+                };
+            }
+            
+            // Handle enter/escape keys
+            input.onkeydown = (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    setNickname(stationId, input.value);
+                } else if (e.key === 'Escape') {
+                    nameEl.innerHTML = originalContent;
+                }
+            };
+        }
+        
+        function getStationDisplayName(stationId) {
+            const info = stationInfo[stationId];
+            const nickname = nicknames[stationId];
+            
+            if (nickname) {
+                return `<span class="station-nickname">${nickname}</span>
+                        <div class="station-official-name">${info.name}</div>`;
+            }
+            return `<span>${info.name}</span>`;
+        }
         
         function saveFavorites() {
             localStorage.setItem('baywheels-favorites', JSON.stringify([...favorites]));
@@ -390,8 +547,11 @@
             div.innerHTML = `
                 ${handleHtml}
                 <div class="station-info">
-                    <div class="station-name">${info.name}</div>
-                    <div class="station-meta">${info.short_name || ''}</div>
+                    <div class="station-name">
+                        ${getStationDisplayName(stationId)}
+                        <button class="edit-nickname" onclick="showNicknameEditor('${stationId}', this)" title="Edit nickname">✏️</button>
+                    </div>
+                    <div class="station-meta">${nicknames[stationId] ? '' : (info.short_name || '')}</div>
                 </div>
                 <div class="station-counts">
                     <div class="count ebike">
@@ -484,8 +644,11 @@
                 const info = stationInfo[stationId];
                 const status = stationStatus[stationId];
                 
-                // Skip if not matching search
-                if (searchTerm && !info.name.toLowerCase().includes(searchTerm)) {
+                // Skip if not matching search (check both name and nickname)
+                const nickname = nicknames[stationId] || '';
+                if (searchTerm && 
+                    !info.name.toLowerCase().includes(searchTerm) &&
+                    !nickname.toLowerCase().includes(searchTerm)) {
                     continue;
                 }
                 
@@ -711,7 +874,10 @@
             
             div.innerHTML = `
                 <div class="station-info">
-                    <div class="station-name">${info.name}</div>
+                    <div class="station-name">
+                        ${getStationDisplayName(stationId)}
+                        <button class="edit-nickname" onclick="showNicknameEditor('${stationId}', this)" title="Edit nickname">✏️</button>
+                    </div>
                     <div class="station-meta">${distStr} away</div>
                 </div>
                 <div class="station-counts">

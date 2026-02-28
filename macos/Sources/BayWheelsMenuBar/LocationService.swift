@@ -27,8 +27,13 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         case .notDetermined:
             // Request permission; locationManagerDidChangeAuthorization
             // will call startUpdatingLocation() once granted.
-            manager.requestWhenInUseAuthorization()
+            manager.requestAlwaysAuthorization()
         case .authorized, .authorizedAlways:
+            // Use cached system location if available for instant startup.
+            if location == nil, let cached = manager.location,
+               cached.timestamp.timeIntervalSinceNow > -300 {
+                self.location = cached
+            }
             manager.startUpdatingLocation()
         case .denied, .restricted:
             DispatchQueue.main.async {
@@ -74,6 +79,10 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
             switch manager.authorizationStatus {
             case .authorized, .authorizedAlways:
                 self.error = nil
+                if self.location == nil, let cached = manager.location,
+                   cached.timestamp.timeIntervalSinceNow > -300 {
+                    self.location = cached
+                }
                 manager.startUpdatingLocation()
             case .denied, .restricted:
                 self.error = "Location access denied"

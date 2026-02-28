@@ -313,8 +313,8 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
 </head>
 <body>
     <h1>🚲 Bay Wheels eBike Tracker</h1>
@@ -695,19 +695,21 @@
         // ==================== NEARBY TAB ====================
         let map = null;
         let userLocation = null;
-        let radiusCircle = null;
         let stationMarkers = [];
-        let userMarker = null;
         
         function initMap() {
             // Default to SF if no location yet
             const defaultLat = 37.7749;
             const defaultLng = -122.4194;
             
-            map = L.map('map').setView([defaultLat, defaultLng], 14);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            map = new maplibregl.Map({
+                container: 'map',
+                style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+                center: [defaultLng, defaultLat],
+                zoom: 14
+            });
+            
+            map.addControl(new maplibregl.NavigationControl(), 'top-left');
         }
         
         function requestLocation() {
@@ -733,17 +735,8 @@
                     if (!map) initMap();
                     
                     // Center map on user
-                    map.setView([userLocation.lat, userLocation.lng], 15);
-                    
-                    // Add user marker
-                    if (userMarker) map.removeLayer(userMarker);
-                    userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
-                        radius: 8,
-                        fillColor: '#4285f4',
-                        color: 'white',
-                        weight: 2,
-                        fillOpacity: 1
-                    }).addTo(map).bindPopup('You are here');
+                    map.setCenter([userLocation.lng, userLocation.lat]);
+                    map.setZoom(15);
                     
                     renderNearby();
                 },
@@ -771,6 +764,29 @@
             return R * c;
         }
         
+        function createCircleGeoJSON(center, radiusMeters, points = 64) {
+            const coords = [];
+            const km = radiusMeters / 1000;
+            const distanceX = km / (111.32 * Math.cos(center.lat * Math.PI / 180));
+            const distanceY = km / 110.574;
+            
+            for (let i = 0; i < points; i++) {
+                const theta = (i / points) * (2 * Math.PI);
+                const x = center.lng + (distanceX * Math.cos(theta));
+                const y = center.lat + (distanceY * Math.sin(theta));
+                coords.push([x, y]);
+            }
+            coords.push(coords[0]); // Close the circle
+            
+            return {
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [coords]
+                }
+            };
+        }
+        
         function renderNearby() {
             if (!userLocation || !map) return;
             
@@ -784,19 +800,66 @@
             const walkMinutes = Math.round(distance / 1000 * 12);
             document.getElementById('walkTime').textContent = `~${walkMinutes} min walk`;
             
-            // Update radius circle
-            if (radiusCircle) map.removeLayer(radiusCircle);
-            radiusCircle = L.circle([userLocation.lat, userLocation.lng], {
-                radius: distance,
-                color: '#e00',
-                fillColor: '#e00',
-                fillOpacity: 0.1,
-                weight: 2
-            }).addTo(map);
-            
-            // Clear old station markers
-            stationMarkers.forEach(m => map.removeLayer(m));
+            // Clear old markers
+            stationMarkers.forEach(m => m.remove());
             stationMarkers = [];
+            
+            // Remove old sources/layers if they exist
+            if (map.getLayer('radius-fill')) map.removeLayer('radius-fill');
+            if (map.getLayer('radius-line')) map.removeLayer('radius-line');
+            if (map.getSource('radius')) map.removeSource('radius');
+            if (map.getLayer('user-location')) map.removeLayer('user-location');
+            if (map.getSource('user-location')) map.removeSource('user-location');
+            
+            // Add radius circle
+            map.addSource('radius', {
+                type: 'geojson',
+                data: createCircleGeoJSON(userLocation, distance)
+            });
+            
+            map.addLayer({
+                id: 'radius-fill',
+                type: 'fill',
+                source: 'radius',
+                paint: {
+                    'fill-color': '#e00',
+                    'fill-opacity': 0.1
+                }
+            });
+            
+            map.addLayer({
+                id: 'radius-line',
+                type: 'line',
+                source: 'radius',
+                paint: {
+                    'line-color': '#e00',
+                    'line-width': 2
+                }
+            });
+            
+            // Add user location marker
+            map.addSource('user-location', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [userLocation.lng, userLocation.lat]
+                    }
+                }
+            });
+            
+            map.addLayer({
+                id: 'user-location',
+                type: 'circle',
+                source: 'user-location',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#4285f4',
+                    'circle-stroke-color': 'white',
+                    'circle-stroke-width': 2
+                }
+            });
             
             // Find nearby stations
             const nearbyStations = [];
@@ -828,30 +891,44 @@
                     // Marker color based on ebike availability
                     const markerColor = ebikes > 0 ? '#0a0' : '#999';
                     
-                    const marker = L.circleMarker([info.lat, info.lon], {
-                        radius: 6 + Math.min(ebikes, 5),
-                        fillColor: markerColor,
-                        color: 'white',
-                        weight: 2,
-                        fillOpacity: 0.9
-                    }).addTo(map);
+                    // Create marker element
+                    const el = document.createElement('div');
+                    el.style.width = (12 + Math.min(ebikes, 5) * 2) + 'px';
+                    el.style.height = (12 + Math.min(ebikes, 5) * 2) + 'px';
+                    el.style.backgroundColor = markerColor;
+                    el.style.borderRadius = '50%';
+                    el.style.border = '2px solid white';
+                    el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+                    el.style.cursor = 'pointer';
                     
-                    marker.bindPopup(`
-                        <strong>${info.name}</strong><br>
-                        eBikes: ${ebikes}<br>
-                        Classic: ${classicBikes}
-                    `);
+                    const nickname = nicknames[stationId];
+                    const displayName = nickname ? `${nickname}: ${info.name}` : info.name;
+                    
+                    const popup = new maplibregl.Popup({ offset: 10 })
+                        .setHTML(`
+                            <strong>${displayName}</strong><br>
+                            eBikes: ${ebikes}<br>
+                            Classic: ${classicBikes}
+                        `);
+                    
+                    const marker = new maplibregl.Marker({ element: el })
+                        .setLngLat([info.lon, info.lat])
+                        .setPopup(popup)
+                        .addTo(map);
                     
                     stationMarkers.push(marker);
                     
                     // List item
-                    const el = createNearbyStationElement(stationId, dist);
-                    if (el) listEl.appendChild(el);
+                    const listItem = createNearbyStationElement(stationId, dist);
+                    if (listItem) listEl.appendChild(listItem);
                 });
             }
             
             // Fit map to show radius
-            map.fitBounds(radiusCircle.getBounds(), { padding: [20, 20] });
+            const bounds = new maplibregl.LngLatBounds();
+            const circle = createCircleGeoJSON(userLocation, distance);
+            circle.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds, { padding: 40 });
         }
         
         function createNearbyStationElement(stationId, dist) {

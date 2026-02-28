@@ -893,9 +893,9 @@
             farStations.forEach(({ stationId, info, status }) => {
                 const ebikes = status.num_ebikes_available || 0;
                 
-                // Subdued marker: just the number in gray, no dot
+                // Subdued marker: just the number in slate blue, no dot
                 const el = document.createElement('div');
-                el.style.color = '#aaa';
+                el.style.color = '#483D8B';
                 el.style.fontSize = '10px';
                 el.style.fontWeight = 'bold';
                 el.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';

@@ -14,22 +14,34 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        manager.distanceFilter = 50 // Update when moved 50m
-    }
-
-    func requestPermission() {
-        manager.requestAlwaysAuthorization()
+        manager.distanceFilter = 50
     }
 
     func startUpdating() {
-        if authorizationStatus == .notDetermined {
-            requestPermission()
+        let status = manager.authorizationStatus
+        authorizationStatus = status
+
+        switch status {
+        case .notDetermined:
+            // Request permission; locationManagerDidChangeAuthorization
+            // will call startUpdatingLocation() once granted.
+            manager.requestAlwaysAuthorization()
+        case .authorized, .authorizedAlways:
+            manager.startUpdatingLocation()
+        case .denied, .restricted:
+            DispatchQueue.main.async {
+                self.error = "Location access denied. Enable in System Settings > Privacy & Security > Location Services."
+            }
+        @unknown default:
+            break
         }
-        manager.startUpdatingLocation()
     }
 
-    func stopUpdating() {
-        manager.stopUpdatingLocation()
+    func openLocationSettings() {
+        // Open System Settings to Privacy > Location Services.
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     // MARK: - CLLocationManagerDelegate
@@ -51,9 +63,14 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.authorizationStatus = manager.authorizationStatus
-            if manager.authorizationStatus == .authorized ||
-               manager.authorizationStatus == .authorizedAlways {
+            switch manager.authorizationStatus {
+            case .authorized, .authorizedAlways:
+                self.error = nil
                 manager.startUpdatingLocation()
+            case .denied, .restricted:
+                self.error = "Location access denied"
+            default:
+                break
             }
         }
     }

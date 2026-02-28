@@ -116,9 +116,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // No location warning in nearby mode
         if prefs.mode == .nearby && locationService.location == nil {
-            let noLoc = NSMenuItem(title: "Waiting for location...", action: nil, keyEquivalent: "")
-            noLoc.isEnabled = false
-            menu.addItem(noLoc)
+            if locationService.authorizationStatus == .denied ||
+               locationService.authorizationStatus == .restricted {
+                let noLoc = NSMenuItem(title: "Location access denied", action: nil, keyEquivalent: "")
+                noLoc.isEnabled = false
+                menu.addItem(noLoc)
+                let openSettings = NSMenuItem(title: "Open Location Settings…", action: #selector(openLocationSettings), keyEquivalent: "")
+                openSettings.target = self
+                menu.addItem(openSettings)
+            } else {
+                let noLoc = NSMenuItem(title: "Waiting for location…", action: nil, keyEquivalent: "")
+                noLoc.isEnabled = false
+                menu.addItem(noLoc)
+            }
         }
 
         menu.addItem(.separator())
@@ -266,6 +276,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func refreshNow() {
         gbfs.fetch()
+    }
+
+    @objc private func openLocationSettings() {
+        locationService.openLocationSettings()
     }
 
     @objc private func openPreferences() {

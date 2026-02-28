@@ -168,32 +168,25 @@
         }
         .station-counts {
             display: flex;
+            align-items: flex-end;
             gap: 15px;
-            text-align: center;
         }
-        .count {
-            display: flex;
-            flex-direction: column;
-        }
-        .count-value {
+        .count-ebike {
             font-size: 1.5em;
             font-weight: bold;
-        }
-        .count-label {
-            font-size: 0.75em;
-            color: #666;
-        }
-        .ebike .count-value {
             color: #0a0;
+            text-align: center;
         }
-        .classic .count-value,
-        .docks .count-value {
+        .count-ebike .label {
+            font-size: 0.5em;
+            color: #666;
+            display: block;
+        }
+        .count-secondary {
+            font-size: 0.85em;
             color: #999;
-            font-size: 1.1em;
-        }
-        .classic .count-label,
-        .docks .count-label {
-            color: #aaa;
+            text-align: right;
+            line-height: 1.4;
         }
         .favorites {
             margin-bottom: 30px;
@@ -557,17 +550,13 @@
                     <div class="station-meta">${info.short_name || ''}</div>
                 </div>
                 <div class="station-counts">
-                    <div class="count ebike">
-                        <span class="count-value">${ebikes}</span>
-                        <span class="count-label">eBikes</span>
+                    <div class="count-ebike">
+                        ${ebikes}
+                        <span class="label">eBikes</span>
                     </div>
-                    <div class="count classic">
-                        <span class="count-value">${classicBikes}</span>
-                        <span class="count-label">Classic</span>
-                    </div>
-                    <div class="count docks">
-                        <span class="count-value">${docks}</span>
-                        <span class="count-label">Docks</span>
+                    <div class="count-secondary">
+                        ${classicBikes} classic<br>
+                        ${docks} docks
                     </div>
                 </div>
             `;
@@ -1013,17 +1002,13 @@
                     <div class="station-meta">${distStr} away</div>
                 </div>
                 <div class="station-counts">
-                    <div class="count ebike">
-                        <span class="count-value">${ebikes}</span>
-                        <span class="count-label">eBikes</span>
+                    <div class="count-ebike">
+                        ${ebikes}
+                        <span class="label">eBikes</span>
                     </div>
-                    <div class="count classic">
-                        <span class="count-value">${classicBikes}</span>
-                        <span class="count-label">Classic</span>
-                    </div>
-                    <div class="count docks">
-                        <span class="count-value">${docks}</span>
-                        <span class="count-label">Docks</span>
+                    <div class="count-secondary">
+                        ${classicBikes} classic<br>
+                        ${docks} docks
                     </div>
                 </div>
             `;

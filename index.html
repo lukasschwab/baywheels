@@ -56,13 +56,35 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, transform 0.15s, opacity 0.15s;
         }
         .station:hover {
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .station.selected {
             border: 2px solid #e00;
+        }
+        .station.dragging {
+            opacity: 0.8;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .station.drag-over {
+            border-top: 3px solid #e00;
+        }
+        .drag-handle {
+            cursor: grab;
+            padding: 8px;
+            margin-right: 8px;
+            color: #aaa;
+            font-size: 1.2em;
+            user-select: none;
+        }
+        .drag-handle:hover {
+            color: #666;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
         }
         .station-info {
             flex: 1;
@@ -229,9 +251,14 @@
             
             const div = document.createElement('div');
             div.className = 'station' + (favorites.has(stationId) ? ' selected' : '');
-            div.onclick = () => toggleFavorite(stationId);
+            div.dataset.stationId = stationId;
+            
+            const handleHtml = isFavorite 
+                ? '<span class="drag-handle" draggable="true">⋮⋮</span>' 
+                : '';
             
             div.innerHTML = `
+                ${handleHtml}
                 <div class="station-info">
                     <div class="station-name">${info.name}</div>
                     <div class="station-meta">${info.short_name || ''}</div>
@@ -252,7 +279,67 @@
                 </div>
             `;
             
+            // Click to toggle favorite (but not on drag handle)
+            div.onclick = (e) => {
+                if (!e.target.classList.contains('drag-handle')) {
+                    toggleFavorite(stationId);
+                }
+            };
+            
+            // Drag and drop for favorites
+            if (isFavorite) {
+                const handle = div.querySelector('.drag-handle');
+                
+                handle.addEventListener('dragstart', (e) => {
+                    div.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', stationId);
+                });
+                
+                handle.addEventListener('dragend', () => {
+                    div.classList.remove('dragging');
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                });
+                
+                div.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    div.classList.add('drag-over');
+                });
+                
+                div.addEventListener('dragleave', () => {
+                    div.classList.remove('drag-over');
+                });
+                
+                div.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    div.classList.remove('drag-over');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    const targetId = stationId;
+                    
+                    if (draggedId !== targetId) {
+                        reorderFavorites(draggedId, targetId);
+                    }
+                });
+            }
+            
             return div;
+        }
+        
+        function reorderFavorites(draggedId, targetId) {
+            const arr = [...favorites];
+            const fromIndex = arr.indexOf(draggedId);
+            const toIndex = arr.indexOf(targetId);
+            
+            if (fromIndex === -1 || toIndex === -1) return;
+            
+            // Remove from old position and insert at new position
+            arr.splice(fromIndex, 1);
+            arr.splice(toIndex, 0, draggedId);
+            
+            favorites = new Set(arr);
+            saveFavorites();
+            render();
         }
         
         function render() {
@@ -265,14 +352,8 @@
             if (favorites.size === 0) {
                 favoritesContainer.innerHTML = '<p class="no-favorites">Click any station below to add it to favorites</p>';
             } else {
-                // Sort favorites by ebike count descending
-                const sortedFavorites = [...favorites].sort((a, b) => {
-                    const aEbikes = stationStatus[a]?.num_ebikes_available || 0;
-                    const bEbikes = stationStatus[b]?.num_ebikes_available || 0;
-                    return bEbikes - aEbikes;
-                });
-                
-                for (const stationId of sortedFavorites) {
+                // Maintain user's custom order
+                for (const stationId of favorites) {
                     const el = createStationElement(stationId, true);
                     if (el) favoritesContainer.appendChild(el);
                 }

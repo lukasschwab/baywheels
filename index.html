@@ -156,6 +156,7 @@
             margin-bottom: 20px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
     <h1>🚲 Bay Wheels eBike Tracker</h1>
@@ -254,7 +255,7 @@
             div.dataset.stationId = stationId;
             
             const handleHtml = isFavorite 
-                ? '<span class="drag-handle" draggable="true">⋮⋮</span>' 
+                ? '<span class="drag-handle">☰</span>' 
                 : '';
             
             div.innerHTML = `
@@ -286,60 +287,39 @@
                 }
             };
             
-            // Drag and drop for favorites
-            if (isFavorite) {
-                const handle = div.querySelector('.drag-handle');
-                
-                handle.addEventListener('dragstart', (e) => {
-                    div.classList.add('dragging');
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', stationId);
-                });
-                
-                handle.addEventListener('dragend', () => {
-                    div.classList.remove('dragging');
-                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-                });
-                
-                div.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    div.classList.add('drag-over');
-                });
-                
-                div.addEventListener('dragleave', () => {
-                    div.classList.remove('drag-over');
-                });
-                
-                div.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    div.classList.remove('drag-over');
-                    const draggedId = e.dataTransfer.getData('text/plain');
-                    const targetId = stationId;
-                    
-                    if (draggedId !== targetId) {
-                        reorderFavorites(draggedId, targetId);
-                    }
-                });
-            }
+
             
             return div;
         }
         
-        function reorderFavorites(draggedId, targetId) {
-            const arr = [...favorites];
-            const fromIndex = arr.indexOf(draggedId);
-            const toIndex = arr.indexOf(targetId);
-            
-            if (fromIndex === -1 || toIndex === -1) return;
-            
-            // Remove from old position and insert at new position
-            arr.splice(fromIndex, 1);
-            arr.splice(toIndex, 0, draggedId);
-            
-            favorites = new Set(arr);
+        function syncFavoritesFromDOM() {
+            const container = document.getElementById('favorites');
+            const stationEls = container.querySelectorAll('.station');
+            const newOrder = [];
+            stationEls.forEach(el => {
+                if (el.dataset.stationId) {
+                    newOrder.push(el.dataset.stationId);
+                }
+            });
+            favorites = new Set(newOrder);
             saveFavorites();
-            render();
+        }
+        
+        let sortableInstance = null;
+        
+        function initSortable() {
+            const container = document.getElementById('favorites');
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+            sortableInstance = new Sortable(container, {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'dragging',
+                onEnd: function() {
+                    syncFavoritesFromDOM();
+                }
+            });
         }
         
         function render() {
@@ -357,6 +337,8 @@
                     const el = createStationElement(stationId, true);
                     if (el) favoritesContainer.appendChild(el);
                 }
+                // Initialize sortable after rendering
+                initSortable();
             }
             
             // Render all stations

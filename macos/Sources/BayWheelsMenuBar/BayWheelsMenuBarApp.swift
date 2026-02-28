@@ -264,6 +264,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         item.attributedTitle = title
+
+        if prefs.isFavorite(station.info.station_id),
+           let star = NSImage(systemSymbolName: "star.fill", accessibilityDescription: "Favorite") {
+            let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
+            item.image = star.withSymbolConfiguration(config)
+        }
+
         return item
     }
 

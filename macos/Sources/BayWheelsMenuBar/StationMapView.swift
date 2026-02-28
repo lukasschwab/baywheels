@@ -106,7 +106,7 @@ struct StationMapView: NSViewRepresentable {
                 if station.showCount {
                     // Full marker with eBike count.
                     let bgColor: NSColor = station.inRange
-                        ? NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1)
+                        ? NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1)
                         : NSColor.clear
                     let textColor: NSColor = station.inRange
                         ? .white
@@ -135,7 +135,7 @@ struct StationMapView: NSViewRepresentable {
                 } else {
                     // Simple dot.
                     let color: NSColor = station.inRange
-                        ? NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1)
+                        ? NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1)
                         : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.5)
                     color.setFill()
                     NSBezierPath(ovalIn: rect).fill()

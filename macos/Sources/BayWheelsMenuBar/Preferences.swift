@@ -13,11 +13,19 @@ class Preferences: ObservableObject {
         static let favorites = "baywheels-favorites"
         static let favoriteOrder = "baywheels-favorite-order"
         static let gbfsRoot = "baywheels-gbfs-root"
+        static let showStatusIcon = "baywheels-show-status-icon"
     }
 
     @Published var mode: AppMode {
         didSet {
             defaults.set(mode.rawValue, forKey: Keys.mode)
+        }
+    }
+
+    /// Whether to show the bicycle icon in the status bar.
+    @Published var showStatusIcon: Bool {
+        didSet {
+            defaults.set(showStatusIcon, forKey: Keys.showStatusIcon)
         }
     }
 
@@ -58,6 +66,7 @@ class Preferences: ObservableObject {
     private init() {
         let modeStr = defaults.string(forKey: Keys.mode) ?? AppMode.nearby.rawValue
         self.mode = AppMode(rawValue: modeStr) ?? .nearby
+        self.showStatusIcon = defaults.object(forKey: Keys.showStatusIcon) as? Bool ?? true
         self.gbfsRoot = defaults.string(forKey: Keys.gbfsRoot) ?? Preferences.defaultGBFSRoot
         self.range = defaults.double(forKey: Keys.range).nonZero ?? 500
         self.favorites = Set(defaults.stringArray(forKey: Keys.favorites) ?? [])

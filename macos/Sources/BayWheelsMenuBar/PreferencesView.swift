@@ -15,11 +15,15 @@ struct PreferencesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Mode toggle
-            modeToggle
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+            // Mode toggle + status icon checkbox
+            VStack(spacing: 10) {
+                modeToggle
+                Toggle("Show bicycle icon in menu bar", isOn: $prefs.showStatusIcon)
+                    .font(.subheadline)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             Divider()
 

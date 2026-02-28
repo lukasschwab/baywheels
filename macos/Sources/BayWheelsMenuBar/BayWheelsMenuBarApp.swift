@@ -58,6 +58,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // Re-render status item when icon preference changes.
+        prefs.$showStatusIcon
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusItemTitle(self?.store.totalEbikes ?? 0)
+            }
+            .store(in: &cancellables)
+
         // Also rebuild menu when mode or error changes.
         prefs.$mode
             .receive(on: DispatchQueue.main)
@@ -89,15 +97,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatusItemTitle(_ count: Int) {
         guard let button = statusItem.button else { return }
 
-        let attachment = NSTextAttachment()
-        if let img = NSImage(systemSymbolName: "bicycle", accessibilityDescription: "eBikes") {
-            let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            attachment.image = img.withSymbolConfiguration(config)
+        let attrStr = NSMutableAttributedString()
+
+        if prefs.showStatusIcon {
+            let attachment = NSTextAttachment()
+            if let img = NSImage(systemSymbolName: "bicycle", accessibilityDescription: "eBikes") {
+                let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+                attachment.image = img.withSymbolConfiguration(config)
+            }
+            attrStr.append(NSAttributedString(attachment: attachment))
+            attrStr.append(NSAttributedString(string: " "))
         }
 
-        let attrStr = NSMutableAttributedString()
-        attrStr.append(NSAttributedString(attachment: attachment))
-        attrStr.append(NSAttributedString(string: " \(count)",
+        attrStr.append(NSAttributedString(string: "\(count)",
             attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)]))
 
         button.attributedTitle = attrStr

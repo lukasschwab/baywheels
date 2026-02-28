@@ -213,7 +213,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         title.append(NSAttributedString(string: "  "))
 
         // eBike count
-        let countColor: NSColor = station.ebikes > 0 ? NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1) : .secondaryLabelColor
+        let countColor: NSColor = station.ebikes > 0 ? NSColor(name: nil) { appearance in
+                    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                        ? NSColor(red: 0.45, green: 0.75, blue: 0.45, alpha: 1)
+                        : NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1)
+                } : .secondaryLabelColor
         title.append(NSAttributedString(string: "\(station.ebikes)",
             attributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),

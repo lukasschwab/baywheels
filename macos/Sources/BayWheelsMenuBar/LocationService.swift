@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import CoreLocation
 
 class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {

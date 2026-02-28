@@ -1,8 +1,10 @@
 import SwiftUI
+import MapKit
 
 struct PreferencesView: View {
     @ObservedObject var prefs = Preferences.shared
     @ObservedObject var gbfs = GBFSService.shared
+    @ObservedObject var locationService = LocationService.shared
     @State private var searchText = ""
 
     private var sortedStations: [StationInfo] {
@@ -13,47 +15,86 @@ struct PreferencesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Mode picker
-            Picker("Mode", selection: $prefs.mode) {
+            // Mode toggle
+            modeToggle
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
+            Divider()
+
+            // Nearby settings (always visible)
+            nearbySettings
+                .opacity(prefs.mode == .nearby ? 1.0 : 0.5)
+                .allowsHitTesting(prefs.mode == .nearby)
+
+            Divider()
+
+            // Favorites (always visible)
+            favoritesSettings
+                .opacity(prefs.mode == .favorites ? 1.0 : 0.5)
+                .allowsHitTesting(prefs.mode == .favorites)
+        }
+        .frame(width: 380, height: 620)
+    }
+
+    // MARK: - Mode Toggle
+
+    private var modeToggle: some View {
+        HStack {
+            Text("Mode")
+                .font(.headline)
+            Spacer()
+            Picker("", selection: $prefs.mode) {
                 ForEach(AppMode.allCases, id: \.self) { mode in
                     Text(mode.label).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
-            .padding()
-
-            Divider()
-
-            if prefs.mode == .nearby {
-                nearbySettings
-            } else {
-                favoritesSettings
-            }
+            .frame(width: 200)
         }
-        .frame(width: 360, height: 480)
     }
+
+    // MARK: - Nearby Settings
 
     private var nearbySettings: some View {
-        VStack(spacing: 16) {
-            Text("Range: \(Int(prefs.range))m")
-                .font(.headline)
+        VStack(spacing: 8) {
+            // Map
+            StationMapView(
+                userLocation: locationService.location?.coordinate,
+                radius: prefs.range,
+                stations: Array(gbfs.stationInfos.values),
+                statuses: gbfs.stationStatuses
+            )
+            .frame(height: 180)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
 
-            Picker("Range", selection: $prefs.range) {
-                ForEach(Preferences.rangeOptions, id: \.self) { r in
-                    Text("\(Int(r))m").tag(r)
+            // Slider
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Range")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(Int(prefs.range))m")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
+
+                Slider(
+                    value: $prefs.range,
+                    in: 100...2000,
+                    step: 50
+                )
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-
-            Text("Shows stations within \(Int(prefs.range))m of your current location.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Spacer()
+            .padding(.horizontal, 16)
+            .padding(.bottom, 10)
         }
-        .padding()
     }
+
+    // MARK: - Favorites Settings
 
     private var favoritesSettings: some View {
         VStack(spacing: 0) {

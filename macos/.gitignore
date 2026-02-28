@@ -4,3 +4,5 @@ Bay Wheels.app/
 *.xcodeproj
 *.xcworkspace
 DerivedData/
+
+*.zip

@@ -1,0 +1,6 @@
+.build/
+.swiftpm/
+Bay Wheels.app/
+*.xcodeproj
+*.xcworkspace
+DerivedData/

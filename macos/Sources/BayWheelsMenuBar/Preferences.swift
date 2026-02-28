@@ -1,0 +1,73 @@
+import Foundation
+import Combine
+
+@MainActor
+class Preferences: ObservableObject {
+    static let shared = Preferences()
+
+    private let defaults = UserDefaults.standard
+
+    private enum Keys {
+        static let mode = "baywheels-mode"
+        static let range = "baywheels-range"
+        static let favorites = "baywheels-favorites"
+        static let favoriteOrder = "baywheels-favorite-order"
+    }
+
+    @Published var mode: AppMode {
+        didSet {
+            defaults.set(mode.rawValue, forKey: Keys.mode)
+        }
+    }
+
+    /// Range in meters for nearby mode.
+    @Published var range: Double {
+        didSet {
+            defaults.set(range, forKey: Keys.range)
+        }
+    }
+
+    /// Set of favorite station IDs.
+    @Published var favorites: Set<String> {
+        didSet {
+            defaults.set(Array(favorites), forKey: Keys.favorites)
+        }
+    }
+
+    /// Ordered list of favorite station IDs.
+    @Published var favoriteOrder: [String] {
+        didSet {
+            defaults.set(favoriteOrder, forKey: Keys.favoriteOrder)
+        }
+    }
+
+    static let rangeOptions: [Double] = [200, 500, 750, 1000, 1500, 2000]
+
+    private init() {
+        let modeStr = defaults.string(forKey: Keys.mode) ?? AppMode.nearby.rawValue
+        self.mode = AppMode(rawValue: modeStr) ?? .nearby
+        self.range = defaults.double(forKey: Keys.range).nonZero ?? 500
+        self.favorites = Set(defaults.stringArray(forKey: Keys.favorites) ?? [])
+        self.favoriteOrder = defaults.stringArray(forKey: Keys.favoriteOrder) ?? []
+    }
+
+    func toggleFavorite(_ stationId: String) {
+        if favorites.contains(stationId) {
+            favorites.remove(stationId)
+            favoriteOrder.removeAll { $0 == stationId }
+        } else {
+            favorites.insert(stationId)
+            favoriteOrder.append(stationId)
+        }
+    }
+
+    func isFavorite(_ stationId: String) -> Bool {
+        favorites.contains(stationId)
+    }
+}
+
+extension Double {
+    var nonZero: Double? {
+        self == 0 ? nil : self
+    }
+}

@@ -3,7 +3,7 @@ BUNDLE_ID = com.lukasschwab.BayWheelsMenuBar
 BUILD_DIR = .build
 APP_DIR = $(APP_NAME)
 
-.PHONY: build run clean bundle dist
+.PHONY: build run clean bundle dist install uninstall
 
 build:
 	swift build -c release
@@ -28,6 +28,15 @@ sign: bundle
 
 run: sign
 	open "$(APP_DIR)"
+
+install: sign
+	@rm -rf "/Applications/$(APP_NAME)"
+	cp -R "$(APP_DIR)" "/Applications/$(APP_NAME)"
+	@echo "Installed to /Applications/$(APP_NAME)"
+
+uninstall:
+	@rm -rf "/Applications/$(APP_NAME)"
+	@echo "Removed /Applications/$(APP_NAME)"
 
 dist: sign
 	@rm -f "Bay Wheels.zip"

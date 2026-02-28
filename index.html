@@ -800,8 +800,7 @@
             const distance = parseInt(document.getElementById('distanceSlider').value);
             
             // Update distance display
-            document.getElementById('distanceValue').textContent = 
-                distance >= 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm';
+            document.getElementById('distanceValue').textContent = distance + 'm';
             
             // Walking time: ~5km/h = ~12 min per km = ~1.2 min per 100m
             const walkMinutes = Math.round(distance / 1000 * 12);

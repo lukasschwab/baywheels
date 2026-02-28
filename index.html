@@ -317,18 +317,18 @@
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
 </head>
 <body>
-    <h1>🚲 Bay Wheels eBike Tracker</h1>
+    <h1>Bay Wheels eBike Tracker</h1>
     <p class="last-updated" id="lastUpdated">Loading...</p>
     
     <div class="tabs">
-        <button class="tab active" data-tab="favorites">⭐ Favorites</button>
-        <button class="tab" data-tab="nearby">📍 Nearby</button>
+        <button class="tab" data-tab="favorites">Favorites</button>
+        <button class="tab active" data-tab="nearby">Nearby</button>
     </div>
     
     <div id="error" class="error" style="display: none;"></div>
     
     <!-- Favorites Tab -->
-    <div id="tab-favorites" class="tab-content active">
+    <div id="tab-favorites" class="tab-content">
         <p class="subtitle">Click stations to add/remove from favorites</p>
         
         <div class="controls">
@@ -351,7 +351,7 @@
     </div>
     
     <!-- Nearby Tab -->
-    <div id="tab-nearby" class="tab-content">
+    <div id="tab-nearby" class="tab-content active">
         <div id="locationStatus" class="location-status">
             <p>Enable location to find stations near you.</p>
             <button onclick="requestLocation()">Enable Location</button>

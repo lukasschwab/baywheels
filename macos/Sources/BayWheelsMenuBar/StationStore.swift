@@ -53,7 +53,7 @@ class StationStore: ObservableObject {
 
             for (id, info) in infos {
                 guard let status = statuses[id] else { continue }
-                guard status.is_installed == true, status.is_renting == true else { continue }
+                guard status.installed, status.renting else { continue }
 
                 let dist = userLocation.distance(from: info.location)
                 if dist <= range {

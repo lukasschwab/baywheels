@@ -42,14 +42,16 @@ struct StationStatus: Codable {
     let num_ebikes_available: Int?
     let num_bikes_available: Int?
     let num_docks_available: Int?
-    let is_installed: Bool?
-    let is_renting: Bool?
+    let is_installed: Int?
+    let is_renting: Int?
 
     var ebikes: Int { num_ebikes_available ?? 0 }
     var classicBikes: Int {
         (num_bikes_available ?? 0) - ebikes
     }
     var docks: Int { num_docks_available ?? 0 }
+    var installed: Bool { is_installed == 1 }
+    var renting: Bool { is_renting == 1 }
 }
 
 // MARK: - App Models

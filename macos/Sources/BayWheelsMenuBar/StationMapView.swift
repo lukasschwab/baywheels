@@ -74,8 +74,16 @@ struct StationMapView: NSViewRepresentable {
     class Coordinator: NSObject, MKMapViewDelegate {
         var hasSetRegion = false
 
-        private let radiusFillColor = NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.08)
-        private let radiusStrokeColor = NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.5)
+        private let radiusFillColor = NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(red: 0.55, green: 0.5, blue: 0.85, alpha: 0.12)
+                : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.08)
+        }
+        private let radiusStrokeColor = NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(red: 0.6, green: 0.55, blue: 0.9, alpha: 0.6)
+                : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.5)
+        }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let circle = overlay as? MKCircle {

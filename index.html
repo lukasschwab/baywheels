@@ -97,10 +97,7 @@
             color: #e00;
             font-weight: 600;
         }
-        .station-official-name {
-            color: #666;
-            font-size: 0.85em;
-        }
+
         .edit-nickname {
             background: none;
             border: none;
@@ -472,8 +469,7 @@
             const nickname = nicknames[stationId];
             
             if (nickname) {
-                return `<span class="station-nickname">${nickname}</span>
-                        <div class="station-official-name">${info.name}</div>`;
+                return `<span class="station-nickname">${nickname}:</span> ${info.name}`;
             }
             return `<span>${info.name}</span>`;
         }
@@ -551,7 +547,7 @@
                         ${getStationDisplayName(stationId)}
                         <button class="edit-nickname" onclick="showNicknameEditor('${stationId}', this)" title="Edit nickname">✏️</button>
                     </div>
-                    <div class="station-meta">${nicknames[stationId] ? '' : (info.short_name || '')}</div>
+                    <div class="station-meta">${info.short_name || ''}</div>
                 </div>
                 <div class="station-counts">
                     <div class="count ebike">

@@ -1,4 +1,4 @@
-# Bay Wheels eBike Tracker
+# baywheels
 
 Track eBike availability at Bay Wheels stations.
 

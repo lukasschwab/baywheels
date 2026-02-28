@@ -27,7 +27,7 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         case .notDetermined:
             // Request permission; locationManagerDidChangeAuthorization
             // will call startUpdatingLocation() once granted.
-            manager.requestAlwaysAuthorization()
+            manager.requestWhenInUseAuthorization()
         case .authorized, .authorizedAlways:
             manager.startUpdatingLocation()
         case .denied, .restricted:

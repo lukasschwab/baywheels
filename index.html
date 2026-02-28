@@ -1027,9 +1027,27 @@
         // Distance slider handler
         document.getElementById('distanceSlider').addEventListener('input', renderNearby);
         
+        // Check if location permission already granted
+        async function checkLocationPermission() {
+            if (navigator.permissions) {
+                try {
+                    const result = await navigator.permissions.query({ name: 'geolocation' });
+                    if (result.state === 'granted') {
+                        // Auto-request location if already permitted
+                        requestLocation();
+                    }
+                } catch (e) {
+                    // Permissions API not supported, do nothing
+                }
+            }
+        }
+        
         // Initial fetch and poll
         fetchData();
         setInterval(fetchData, POLL_INTERVAL);
+        
+        // Check location permission on load
+        checkLocationPermission();
     </script>
 </body>
 </html>

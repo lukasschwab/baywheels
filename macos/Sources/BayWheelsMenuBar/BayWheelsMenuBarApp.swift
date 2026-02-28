@@ -143,8 +143,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        menu.addItem(.separator())
-
         // Station list
         if store.displayStations.isEmpty {
             let empty: String

@@ -166,36 +166,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        // Mode submenu
-        let modeItem = NSMenuItem(title: "Mode", action: nil, keyEquivalent: "")
-        let modeSubmenu = NSMenu()
-        for mode in AppMode.allCases {
-            let mi = NSMenuItem(title: mode.label, action: #selector(changeMode(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = mode
-            mi.state = (mode == prefs.mode) ? .on : .off
-            modeSubmenu.addItem(mi)
-        }
-        modeItem.submenu = modeSubmenu
-        menu.addItem(modeItem)
-
-        // Range submenu (only in nearby mode)
-        if prefs.mode == .nearby {
-            let rangeItem = NSMenuItem(title: "Range", action: nil, keyEquivalent: "")
-            let rangeSubmenu = NSMenu()
-            for r in Preferences.rangeOptions {
-                let ri = NSMenuItem(title: "\(Int(r))m", action: #selector(changeRange(_:)), keyEquivalent: "")
-                ri.target = self
-                ri.representedObject = r
-                ri.state = (r == prefs.range) ? .on : .off
-                rangeSubmenu.addItem(ri)
-            }
-            rangeItem.submenu = rangeSubmenu
-            menu.addItem(rangeItem)
-        }
-
-        menu.addItem(.separator())
-
         // Last updated
         if let updated = gbfs.lastUpdated {
             let formatter = RelativeDateTimeFormatter()

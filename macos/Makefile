@@ -3,7 +3,7 @@ BUNDLE_ID = com.lukasschwab.BayWheelsMenuBar
 BUILD_DIR = .build
 APP_DIR = $(APP_NAME)
 
-.PHONY: build run clean bundle
+.PHONY: build run clean bundle dist
 
 build:
 	swift build -c release
@@ -29,6 +29,11 @@ sign: bundle
 run: sign
 	open "$(APP_DIR)"
 
+dist: sign
+	@rm -f "Bay Wheels.zip"
+	ditto -c -k --keepParent "$(APP_DIR)" "Bay Wheels.zip"
+	@echo "Created Bay Wheels.zip ($$(du -h 'Bay Wheels.zip' | cut -f1))"
+
 clean:
 	swift package clean
-	rm -rf "$(APP_DIR)"
+	rm -rf "$(APP_DIR)" "Bay Wheels.zip"

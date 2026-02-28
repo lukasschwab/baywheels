@@ -732,13 +732,19 @@
                     statusEl.style.display = 'none';
                     document.getElementById('nearbyControls').style.display = 'block';
                     
-                    if (!map) initMap();
-                    
-                    // Center map on user
-                    map.setCenter([userLocation.lng, userLocation.lat]);
-                    map.setZoom(15);
-                    
-                    renderNearby();
+                    if (!map) {
+                        initMap();
+                        // Wait for map style to load before rendering
+                        map.on('load', () => {
+                            map.setCenter([userLocation.lng, userLocation.lat]);
+                            map.setZoom(15);
+                            renderNearby();
+                        });
+                    } else {
+                        map.setCenter([userLocation.lng, userLocation.lat]);
+                        map.setZoom(15);
+                        renderNearby();
+                    }
                 },
                 (error) => {
                     statusEl.classList.add('error');

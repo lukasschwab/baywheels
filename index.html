@@ -891,15 +891,24 @@
                     // Marker color based on ebike availability
                     const markerColor = ebikes > 0 ? '#0a0' : '#999';
                     
-                    // Create marker element
+                    // Create marker element with number
                     const el = document.createElement('div');
-                    el.style.width = (12 + Math.min(ebikes, 5) * 2) + 'px';
-                    el.style.height = (12 + Math.min(ebikes, 5) * 2) + 'px';
+                    const size = Math.max(22, 22 + (ebikes > 9 ? 4 : 0));
+                    el.style.width = size + 'px';
+                    el.style.height = size + 'px';
                     el.style.backgroundColor = markerColor;
                     el.style.borderRadius = '50%';
                     el.style.border = '2px solid white';
                     el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
                     el.style.cursor = 'pointer';
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.justifyContent = 'center';
+                    el.style.color = 'white';
+                    el.style.fontSize = '11px';
+                    el.style.fontWeight = 'bold';
+                    el.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
+                    el.textContent = ebikes;
                     
                     const nickname = nicknames[stationId];
                     const displayName = nickname ? `${nickname}: ${info.name}` : info.name;

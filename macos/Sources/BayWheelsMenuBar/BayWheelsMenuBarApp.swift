@@ -17,6 +17,7 @@ struct BayWheelsMenuBarApp: App {
 
 // MARK: - AppDelegate
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var cancellables = Set<AnyCancellable>()

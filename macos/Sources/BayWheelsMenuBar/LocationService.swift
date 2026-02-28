@@ -18,7 +18,7 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     func requestPermission() {
-        manager.requestWhenInUseAuthorization()
+        manager.requestAlwaysAuthorization()
     }
 
     func startUpdating() {
@@ -51,7 +51,7 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.authorizationStatus = manager.authorizationStatus
-            if manager.authorizationStatus == .authorizedWhenInUse ||
+            if manager.authorizationStatus == .authorized ||
                manager.authorizationStatus == .authorizedAlways {
                 manager.startUpdatingLocation()
             }

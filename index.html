@@ -867,8 +867,11 @@
                 }
             });
             
-            // Find nearby stations
+            // Find all stations and categorize by distance
             const nearbyStations = [];
+            const farStations = [];
+            const maxRenderDistance = distance * 3; // Render stations up to 3x the radius
+            
             for (const stationId of Object.keys(stationInfo)) {
                 const info = stationInfo[stationId];
                 const status = stationStatus[stationId];
@@ -877,13 +880,47 @@
                 const dist = getDistance(userLocation.lat, userLocation.lng, info.lat, info.lon);
                 if (dist <= distance) {
                     nearbyStations.push({ stationId, info, status, distance: dist });
+                } else if (dist <= maxRenderDistance) {
+                    farStations.push({ stationId, info, status, distance: dist });
                 }
             }
             
             // Sort by distance
             nearbyStations.sort((a, b) => a.distance - b.distance);
             
-            // Add markers and build list
+            // Add markers for FAR stations first (so nearby ones render on top)
+            farStations.forEach(({ stationId, info, status }) => {
+                const ebikes = status.num_ebikes_available || 0;
+                
+                // Subdued marker: just the number in gray, no dot
+                const el = document.createElement('div');
+                el.style.color = '#aaa';
+                el.style.fontSize = '10px';
+                el.style.fontWeight = 'bold';
+                el.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
+                el.style.cursor = 'pointer';
+                el.textContent = ebikes;
+                
+                const nickname = nicknames[stationId];
+                const displayName = nickname ? `${nickname}: ${info.name}` : info.name;
+                const classicBikes = (status.num_bikes_available || 0) - ebikes;
+                
+                const popup = new maplibregl.Popup({ offset: 5 })
+                    .setHTML(`
+                        <strong>${displayName}</strong><br>
+                        eBikes: ${ebikes}<br>
+                        Classic: ${classicBikes}
+                    `);
+                
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([info.lon, info.lat])
+                    .setPopup(popup)
+                    .addTo(map);
+                
+                stationMarkers.push(marker);
+            });
+            
+            // Add markers and build list for NEARBY stations
             const listEl = document.getElementById('nearbyList');
             listEl.innerHTML = '';
             

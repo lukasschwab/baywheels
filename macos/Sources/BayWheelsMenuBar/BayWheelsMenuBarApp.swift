@@ -73,6 +73,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // Rebuild immediately when location arrives.
+        locationService.$location
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.rebuildMenu()
+            }
+            .store(in: &cancellables)
+
         rebuildMenu()
     }
 
@@ -238,7 +246,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // eBike count
         let countColor: NSColor = station.ebikes > 0 ? .systemGreen : .secondaryLabelColor
-        title.append(NSAttributedString(string: "\(station.ebikes)⚡",
+        title.append(NSAttributedString(string: "\(station.ebikes)",
             attributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
                 .foregroundColor: countColor

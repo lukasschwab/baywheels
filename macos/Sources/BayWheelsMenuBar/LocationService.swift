@@ -14,8 +14,9 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     override private init() {
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        manager.distanceFilter = 50
+        // Start with best accuracy for a fast initial fix, then relax.
+        manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+        manager.distanceFilter = kCLDistanceFilterNone
     }
 
     func startUpdating() {
@@ -50,8 +51,14 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
         DispatchQueue.main.async {
+            let isFirst = self.location == nil
             self.location = loc
             self.error = nil
+            // After first fix, relax accuracy to save power.
+            if isFirst {
+                manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+                manager.distanceFilter = 50
+            }
         }
     }
 

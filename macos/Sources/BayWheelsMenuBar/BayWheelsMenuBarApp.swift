@@ -27,6 +27,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let prefs = Preferences.shared
     private let store = StationStore.shared
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hide dock icon — this is a menu bar–only app.
         NSApp.setActivationPolicy(.accessory)

@@ -64,7 +64,8 @@ struct PreferencesView: View {
                 userLocation: locationService.location?.coordinate,
                 radius: prefs.range,
                 stations: Array(gbfs.stationInfos.values),
-                statuses: gbfs.stationStatuses
+                statuses: gbfs.stationStatuses,
+                showCounts: false
             )
             .frame(height: 180)
             .cornerRadius(6)

@@ -7,6 +7,7 @@ struct StationMapView: NSViewRepresentable {
     var radius: Double
     var stations: [StationInfo]
     var statuses: [String: StationStatus]
+    var showCounts: Bool = true
 
     func makeNSView(context: Context) -> MKMapView {
         let map = MKMapView()
@@ -49,7 +50,8 @@ struct StationMapView: NSViewRepresentable {
                 coordinate: station.coordinate,
                 title: station.name,
                 ebikes: ebikes,
-                inRange: dist <= radius
+                inRange: dist <= radius,
+                showCount: showCounts
             )
             map.addAnnotation(annotation)
         }
@@ -96,36 +98,48 @@ struct StationMapView: NSViewRepresentable {
             view.annotation = annotation
             view.canShowCallout = true
 
-            // Draw a circle with the eBike count.
-            let size: CGFloat = station.inRange ? 28 : 22
+            // Draw station marker.
+            let size: CGFloat = station.showCount
+                ? (station.inRange ? 28 : 22)
+                : (station.inRange ? 10 : 7)
             let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
-                let bgColor: NSColor = station.inRange
-                    ? NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1)
-                    : NSColor.clear
-                let textColor: NSColor = station.inRange
-                    ? .white
-                    : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 1)
+                if station.showCount {
+                    // Full marker with eBike count.
+                    let bgColor: NSColor = station.inRange
+                        ? NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1)
+                        : NSColor.clear
+                    let textColor: NSColor = station.inRange
+                        ? .white
+                        : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 1)
 
-                if station.inRange {
-                    bgColor.setFill()
+                    if station.inRange {
+                        bgColor.setFill()
+                        NSBezierPath(ovalIn: rect).fill()
+                    }
+
+                    let text = "\(station.ebikes)" as NSString
+                    let fontSize: CGFloat = station.inRange ? 13 : 11
+                    let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
+                    let attrs: [NSAttributedString.Key: Any] = [
+                        .font: font,
+                        .foregroundColor: textColor
+                    ]
+                    let textSize = text.size(withAttributes: attrs)
+                    let textRect = CGRect(
+                        x: (rect.width - textSize.width) / 2,
+                        y: (rect.height - textSize.height) / 2,
+                        width: textSize.width,
+                        height: textSize.height
+                    )
+                    text.draw(in: textRect, withAttributes: attrs)
+                } else {
+                    // Simple dot.
+                    let color: NSColor = station.inRange
+                        ? NSColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1)
+                        : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.5)
+                    color.setFill()
                     NSBezierPath(ovalIn: rect).fill()
                 }
-
-                let text = "\(station.ebikes)" as NSString
-                let fontSize: CGFloat = station.inRange ? 13 : 11
-                let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: font,
-                    .foregroundColor: textColor
-                ]
-                let textSize = text.size(withAttributes: attrs)
-                let textRect = CGRect(
-                    x: (rect.width - textSize.width) / 2,
-                    y: (rect.height - textSize.height) / 2,
-                    width: textSize.width,
-                    height: textSize.height
-                )
-                text.draw(in: textRect, withAttributes: attrs)
                 return true
             }
 
@@ -143,11 +157,13 @@ class StationAnnotation: NSObject, MKAnnotation {
     let title: String?
     let ebikes: Int
     let inRange: Bool
+    let showCount: Bool
 
-    init(coordinate: CLLocationCoordinate2D, title: String, ebikes: Int, inRange: Bool) {
+    init(coordinate: CLLocationCoordinate2D, title: String, ebikes: Int, inRange: Bool, showCount: Bool = true) {
         self.coordinate = coordinate
         self.title = title
         self.ebikes = ebikes
         self.inRange = inRange
+        self.showCount = showCount
     }
 }

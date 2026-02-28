@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bay Wheels eBike Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #e00;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .last-updated {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .controls input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .station-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .station {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        .station:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .station.selected {
+            border: 2px solid #e00;
+        }
+        .station-info {
+            flex: 1;
+        }
+        .station-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .station-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .station-counts {
+            display: flex;
+            gap: 15px;
+            text-align: center;
+        }
+        .count {
+            display: flex;
+            flex-direction: column;
+        }
+        .count-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .count-label {
+            font-size: 0.75em;
+            color: #666;
+        }
+        .ebike .count-value {
+            color: #0a0;
+        }
+        .classic .count-value {
+            color: #666;
+        }
+        .docks .count-value {
+            color: #06c;
+        }
+        .favorites {
+            margin-bottom: 30px;
+        }
+        .favorites h2 {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .no-favorites {
+            color: #888;
+            font-style: italic;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+        .all-stations h2 {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚲 Bay Wheels eBike Tracker</h1>
+    <p class="subtitle">Click stations to add/remove from favorites</p>
+    <p class="last-updated" id="lastUpdated">Loading...</p>
+    
+    <div class="controls">
+        <input type="text" id="search" placeholder="Search stations...">
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div class="favorites" id="favoritesSection">
+        <h2>⭐ Favorites</h2>
+        <div id="favorites" class="station-list">
+            <p class="no-favorites">Click any station below to add it to favorites</p>
+        </div>
+    </div>
+    
+    <div class="all-stations">
+        <h2>All Stations</h2>
+        <div id="stations" class="station-list">
+            <div class="loading">Loading stations...</div>
+        </div>
+    </div>
+
+    <script>
+        const STATION_INFO_URL = 'https://gbfs.lyft.com/gbfs/2.3/bay/en/station_information.json';
+        const STATION_STATUS_URL = 'https://gbfs.lyft.com/gbfs/2.3/bay/en/station_status.json';
+        const POLL_INTERVAL = 30000; // 30 seconds
+        
+        let stationInfo = {};
+        let stationStatus = {};
+        let favorites = new Set(JSON.parse(localStorage.getItem('baywheels-favorites') || '[]'));
+        
+        function saveFavorites() {
+            localStorage.setItem('baywheels-favorites', JSON.stringify([...favorites]));
+        }
+        
+        function toggleFavorite(stationId) {
+            if (favorites.has(stationId)) {
+                favorites.delete(stationId);
+            } else {
+                favorites.add(stationId);
+            }
+            saveFavorites();
+            render();
+        }
+        
+        async function fetchData() {
+            try {
+                const [infoRes, statusRes] = await Promise.all([
+                    fetch(STATION_INFO_URL),
+                    fetch(STATION_STATUS_URL)
+                ]);
+                
+                const infoData = await infoRes.json();
+                const statusData = await statusRes.json();
+                
+                // Index station info by ID
+                stationInfo = {};
+                for (const station of infoData.data.stations) {
+                    stationInfo[station.station_id] = station;
+                }
+                
+                // Index station status by ID
+                stationStatus = {};
+                for (const status of statusData.data.stations) {
+                    stationStatus[status.station_id] = status;
+                }
+                
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+                
+                render();
+            } catch (err) {
+                console.error('Failed to fetch data:', err);
+                document.getElementById('error').textContent = `Error loading data: ${err.message}`;
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        function createStationElement(stationId, isFavorite) {
+            const info = stationInfo[stationId];
+            const status = stationStatus[stationId];
+            
+            if (!info || !status) return null;
+            
+            const ebikes = status.num_ebikes_available || 0;
+            const classicBikes = (status.num_bikes_available || 0) - ebikes;
+            const docks = status.num_docks_available || 0;
+            
+            const div = document.createElement('div');
+            div.className = 'station' + (favorites.has(stationId) ? ' selected' : '');
+            div.onclick = () => toggleFavorite(stationId);
+            
+            div.innerHTML = `
+                <div class="station-info">
+                    <div class="station-name">${info.name}</div>
+                    <div class="station-meta">${info.short_name || ''}</div>
+                </div>
+                <div class="station-counts">
+                    <div class="count ebike">
+                        <span class="count-value">${ebikes}</span>
+                        <span class="count-label">eBikes</span>
+                    </div>
+                    <div class="count classic">
+                        <span class="count-value">${classicBikes}</span>
+                        <span class="count-label">Classic</span>
+                    </div>
+                    <div class="count docks">
+                        <span class="count-value">${docks}</span>
+                        <span class="count-label">Docks</span>
+                    </div>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function render() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            
+            // Render favorites
+            const favoritesContainer = document.getElementById('favorites');
+            favoritesContainer.innerHTML = '';
+            
+            if (favorites.size === 0) {
+                favoritesContainer.innerHTML = '<p class="no-favorites">Click any station below to add it to favorites</p>';
+            } else {
+                // Sort favorites by ebike count descending
+                const sortedFavorites = [...favorites].sort((a, b) => {
+                    const aEbikes = stationStatus[a]?.num_ebikes_available || 0;
+                    const bEbikes = stationStatus[b]?.num_ebikes_available || 0;
+                    return bEbikes - aEbikes;
+                });
+                
+                for (const stationId of sortedFavorites) {
+                    const el = createStationElement(stationId, true);
+                    if (el) favoritesContainer.appendChild(el);
+                }
+            }
+            
+            // Render all stations
+            const stationsContainer = document.getElementById('stations');
+            stationsContainer.innerHTML = '';
+            
+            // Sort stations by name
+            const sortedStations = Object.keys(stationInfo).sort((a, b) => {
+                return stationInfo[a].name.localeCompare(stationInfo[b].name);
+            });
+            
+            let count = 0;
+            for (const stationId of sortedStations) {
+                const info = stationInfo[stationId];
+                const status = stationStatus[stationId];
+                
+                // Skip if not matching search
+                if (searchTerm && !info.name.toLowerCase().includes(searchTerm)) {
+                    continue;
+                }
+                
+                // Skip non-active stations
+                if (!status?.is_renting) continue;
+                
+                const el = createStationElement(stationId, false);
+                if (el) {
+                    stationsContainer.appendChild(el);
+                    count++;
+                }
+            }
+            
+            if (count === 0) {
+                stationsContainer.innerHTML = '<p class="no-favorites">No stations found</p>';
+            }
+        }
+        
+        // Search handler
+        document.getElementById('search').addEventListener('input', render);
+        
+        // Initial fetch and poll
+        fetchData();
+        setInterval(fetchData, POLL_INTERVAL);
+    </script>
+</body>
+</html>

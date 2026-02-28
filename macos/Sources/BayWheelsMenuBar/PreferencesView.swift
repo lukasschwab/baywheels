@@ -67,9 +67,8 @@ struct PreferencesView: View {
                 statuses: gbfs.stationStatuses
             )
             .frame(height: 180)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
+            .cornerRadius(6)
+            .padding(EdgeInsets(top: 10, leading: 12, bottom: 0, trailing: 12))
 
             // Slider
             VStack(spacing: 4) {

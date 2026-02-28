@@ -185,7 +185,7 @@
         .count-secondary {
             font-size: 0.85em;
             color: #999;
-            text-align: right;
+            text-align: left;
             line-height: 1.4;
         }
         .favorites {
@@ -550,13 +550,13 @@
                     <div class="station-meta">${info.short_name || ''}</div>
                 </div>
                 <div class="station-counts">
-                    <div class="count-ebike">
-                        ${ebikes}
-                        <span class="label">eBikes</span>
-                    </div>
                     <div class="count-secondary">
                         ${classicBikes} classic<br>
                         ${docks} docks
+                    </div>
+                    <div class="count-ebike">
+                        ${ebikes}
+                        <span class="label">eBikes</span>
                     </div>
                 </div>
             `;
@@ -1002,13 +1002,13 @@
                     <div class="station-meta">${distStr} away</div>
                 </div>
                 <div class="station-counts">
-                    <div class="count-ebike">
-                        ${ebikes}
-                        <span class="label">eBikes</span>
-                    </div>
                     <div class="count-secondary">
                         ${classicBikes} classic<br>
                         ${docks} docks
+                    </div>
+                    <div class="count-ebike">
+                        ${ebikes}
+                        <span class="label">eBikes</span>
                     </div>
                 </div>
             `;

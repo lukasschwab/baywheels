@@ -18,8 +18,11 @@ struct PreferencesView: View {
             // Mode toggle + status icon checkbox
             VStack(spacing: 10) {
                 modeToggle
-                Toggle("Show bicycle icon in menu bar", isOn: $prefs.showStatusIcon)
-                    .font(.subheadline)
+                HStack {
+                    Toggle("Show bicycle icon in menu bar", isOn: $prefs.showStatusIcon)
+                        .font(.subheadline)
+                    Spacer()
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)

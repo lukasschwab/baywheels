@@ -30,17 +30,13 @@ struct PreferencesView: View {
 
             Divider()
 
-            // Nearby settings (always visible)
+            // Nearby settings
             nearbySettings
-                .opacity(prefs.mode == .nearby ? 1.0 : 0.5)
-                .allowsHitTesting(prefs.mode == .nearby)
 
             Divider()
 
-            // Favorites (always visible)
+            // Favorites
             favoritesSettings
-                .opacity(prefs.mode == .favorites ? 1.0 : 0.5)
-                .allowsHitTesting(prefs.mode == .favorites)
 
             Divider()
 
@@ -52,21 +48,34 @@ struct PreferencesView: View {
         .frame(width: 380, height: 660)
     }
 
-    // MARK: - Mode Toggle
+    // MARK: - Mode Picker
 
     private var modeToggle: some View {
-        HStack {
-            Text("Mode")
-                .font(.headline)
-            Spacer()
-            Picker("", selection: $prefs.mode) {
-                ForEach(AppMode.allCases, id: \.self) { mode in
-                    Text(mode.label).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
+        VStack(alignment: .leading, spacing: 6) {
+            radioButton(
+                "Show eBike count within range",
+                mode: .nearby
+            )
+            radioButton(
+                "Show eBike count at favorite stations",
+                mode: .favorites
+            )
         }
+    }
+
+    private func radioButton(_ label: String, mode: AppMode) -> some View {
+        Button {
+            prefs.mode = mode
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: prefs.mode == mode ? "largecircle.fill.circle" : "circle")
+                    .foregroundStyle(prefs.mode == mode ? .accent : .secondary)
+                    .font(.system(size: 14))
+                Text(label)
+                    .font(.subheadline)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Nearby Settings

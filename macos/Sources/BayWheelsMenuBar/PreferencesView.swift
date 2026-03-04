@@ -87,6 +87,7 @@ struct PreferencesView: View {
                 radius: prefs.range,
                 stations: Array(gbfs.stationInfos.values),
                 statuses: gbfs.stationStatuses,
+                favorites: prefs.favorites,
                 showCounts: false
             )
             .frame(height: 180)

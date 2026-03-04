@@ -7,6 +7,7 @@ struct StationMapView: NSViewRepresentable {
     var radius: Double
     var stations: [StationInfo]
     var statuses: [String: StationStatus]
+    var favorites: Set<String> = []
     var showCounts: Bool = true
 
     func makeNSView(context: Context) -> MKMapView {
@@ -17,7 +18,26 @@ struct StationMapView: NSViewRepresentable {
         return map
     }
 
+    /// Build a snapshot of the inputs that affect the map, for diffing.
+    private func mapSnapshot() -> MapSnapshot {
+        MapSnapshot(
+            lat: userLocation?.latitude,
+            lon: userLocation?.longitude,
+            radius: radius,
+            stationIDs: Set(stations.map(\.station_id)),
+            ebikeCounts: Dictionary(uniqueKeysWithValues: stations.map {
+                ($0.station_id, statuses[$0.station_id]?.ebikes ?? 0)
+            }),
+            favorites: favorites,
+            showCounts: showCounts
+        )
+    }
+
     func updateNSView(_ map: MKMapView, context: Context) {
+        let snapshot = mapSnapshot()
+        guard snapshot != context.coordinator.lastSnapshot else { return }
+        context.coordinator.lastSnapshot = snapshot
+
         // Remove old overlays and annotations (keep user location).
         map.removeOverlays(map.overlays)
         let oldAnnotations = map.annotations.filter { !($0 is MKUserLocation) }
@@ -51,20 +71,23 @@ struct StationMapView: NSViewRepresentable {
                 title: station.name,
                 ebikes: ebikes,
                 inRange: dist <= radius,
+                isFavorite: favorites.contains(station.station_id),
                 showCount: showCounts
             )
             map.addAnnotation(annotation)
         }
 
-        // Fit map to show the radius circle with padding.
-        let viewRadius = max(radius * 1.8, 300)
-        let region = MKCoordinateRegion(
-            center: center,
-            latitudinalMeters: viewRadius * 2,
-            longitudinalMeters: viewRadius * 2
-        )
-        map.setRegion(region, animated: context.coordinator.hasSetRegion)
-        context.coordinator.hasSetRegion = true
+        // Set region only on first render; let the user pan/zoom freely after.
+        if !context.coordinator.hasSetRegion {
+            let viewRadius = max(radius * 1.8, 300)
+            let region = MKCoordinateRegion(
+                center: center,
+                latitudinalMeters: viewRadius * 2,
+                longitudinalMeters: viewRadius * 2
+            )
+            map.setRegion(region, animated: false)
+            context.coordinator.hasSetRegion = true
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -73,6 +96,7 @@ struct StationMapView: NSViewRepresentable {
 
     class Coordinator: NSObject, MKMapViewDelegate {
         var hasSetRegion = false
+        var lastSnapshot: MapSnapshot?
 
         private let radiusFillColor = NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
@@ -104,15 +128,28 @@ struct StationMapView: NSViewRepresentable {
                 ?? MKAnnotationView(annotation: annotation, reuseIdentifier: id)
 
             view.annotation = annotation
-            view.canShowCallout = true
+            view.canShowCallout = false
+            view.toolTip = station.title
 
-            // Draw station marker.
-            let size: CGFloat = station.showCount
-                ? (station.inRange ? 28 : 22)
-                : (station.inRange ? 10 : 7)
-            let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
-                if station.showCount {
-                    // Full marker with eBike count.
+            if station.isFavorite {
+                // Yellow star for favorites.
+                let size: CGFloat = 14
+                let image = NSImage(size: NSSize(width: size, height: size), flipped: true) { rect in
+                    let inset = rect.insetBy(dx: 1, dy: 1)
+                    let star = starPath(in: inset)
+                    NSColor.systemYellow.setFill()
+                    star.fill()
+                    NSColor.black.withAlphaComponent(0.6).setStroke()
+                    star.lineWidth = 1
+                    star.stroke()
+                    return true
+                }
+                view.image = image
+                view.frame.size = NSSize(width: size, height: size)
+            } else if station.showCount {
+                // Full marker with eBike count.
+                let size: CGFloat = station.inRange ? 28 : 22
+                let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
                     let bgColor: NSColor = station.inRange
                         ? NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1)
                         : NSColor.clear
@@ -140,22 +177,40 @@ struct StationMapView: NSViewRepresentable {
                         height: textSize.height
                     )
                     text.draw(in: textRect, withAttributes: attrs)
-                } else {
-                    // Simple dot.
+                    return true
+                }
+                view.image = image
+                view.frame.size = NSSize(width: size, height: size)
+            } else {
+                // Simple dot.
+                let size: CGFloat = station.inRange ? 10 : 7
+                let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
                     let color: NSColor = station.inRange
                         ? NSColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1)
                         : NSColor(red: 0.28, green: 0.24, blue: 0.55, alpha: 0.5)
                     color.setFill()
                     NSBezierPath(ovalIn: rect).fill()
+                    return true
                 }
-                return true
+                view.image = image
+                view.frame.size = NSSize(width: size, height: size)
             }
 
-            view.image = image
-            view.frame.size = NSSize(width: size, height: size)
             return view
         }
     }
+}
+
+// MARK: - Map Snapshot (for diffing)
+
+struct MapSnapshot: Equatable {
+    let lat: Double?
+    let lon: Double?
+    let radius: Double
+    let stationIDs: Set<String>
+    let ebikeCounts: [String: Int]
+    let favorites: Set<String>
+    let showCounts: Bool
 }
 
 // MARK: - Station Annotation
@@ -165,13 +220,42 @@ class StationAnnotation: NSObject, MKAnnotation {
     let title: String?
     let ebikes: Int
     let inRange: Bool
+    let isFavorite: Bool
     let showCount: Bool
 
-    init(coordinate: CLLocationCoordinate2D, title: String, ebikes: Int, inRange: Bool, showCount: Bool = true) {
+    init(coordinate: CLLocationCoordinate2D, title: String, ebikes: Int, inRange: Bool, isFavorite: Bool = false, showCount: Bool = true) {
         self.coordinate = coordinate
         self.title = title
         self.ebikes = ebikes
         self.inRange = inRange
+        self.isFavorite = isFavorite
         self.showCount = showCount
     }
+}
+
+// MARK: - Star Path
+
+private func starPath(in rect: CGRect) -> NSBezierPath {
+    let center = CGPoint(x: rect.midX, y: rect.midY)
+    let outerRadius = min(rect.width, rect.height) / 2
+    let innerRadius = outerRadius * 0.4
+    let points = 5
+    let path = NSBezierPath()
+
+    for i in 0..<(points * 2) {
+        let radius = i.isMultiple(of: 2) ? outerRadius : innerRadius
+        // Start from top (-90°), go clockwise.
+        let angle = CGFloat(i) * .pi / CGFloat(points) - .pi / 2
+        let point = CGPoint(
+            x: center.x + radius * cos(angle),
+            y: center.y + radius * sin(angle)
+        )
+        if i == 0 {
+            path.move(to: point)
+        } else {
+            path.line(to: point)
+        }
+    }
+    path.close()
+    return path
 }

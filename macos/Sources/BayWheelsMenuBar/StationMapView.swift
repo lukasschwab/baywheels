@@ -15,6 +15,7 @@ struct StationMapView: NSViewRepresentable {
         map.delegate = context.coordinator
         map.showsUserLocation = true
         map.pointOfInterestFilter = .excludingAll
+        map.isZoomEnabled = false
         return map
     }
 
@@ -57,14 +58,11 @@ struct StationMapView: NSViewRepresentable {
         let circle = MKCircle(center: center, radius: radius)
         map.addOverlay(circle)
 
-        // Station annotations within visible area (3x radius).
+        // Station annotations.
         let userLoc = CLLocation(latitude: center.latitude, longitude: center.longitude)
-        let showRadius = radius * 3
 
         for station in stations {
             let dist = userLoc.distance(from: station.location)
-            guard dist <= showRadius else { continue }
-
             let ebikes = statuses[station.station_id]?.ebikes ?? 0
             let annotation = StationAnnotation(
                 coordinate: station.coordinate,

@@ -18,7 +18,7 @@ struct BayWheelsMenuBarApp: App {
 // MARK: - AppDelegate
 
 @MainActor
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var cancellables = Set<AnyCancellable>()
 
@@ -180,9 +180,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Last updated
         if let updated = gbfs.lastUpdated {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .abbreviated
-            let ago = formatter.localizedString(for: updated, relativeTo: Date())
+            let seconds = Int(Date().timeIntervalSince(updated))
+            let ago: String
+            if seconds < 60 {
+                ago = "\(max(seconds, 1))s ago"
+            } else if seconds < 3600 {
+                ago = "\(seconds / 60)m ago"
+            } else {
+                ago = "\(seconds / 3600)h ago"
+            }
             let updatedItem = NSMenuItem(title: "Updated \(ago)", action: nil, keyEquivalent: "")
             updatedItem.isEnabled = false
             menu.addItem(updatedItem)
@@ -204,7 +210,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let quitItem = NSMenuItem(title: "Quit Bay Wheels", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
 
+        menu.delegate = self
         statusItem.menu = menu
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        rebuildMenu()
     }
 
     private func stationMenuItem(_ station: DisplayStation) -> NSMenuItem {

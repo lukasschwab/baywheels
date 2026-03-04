@@ -16,14 +16,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Mode toggle + status icon checkbox
-            VStack(spacing: 10) {
-                modeToggle
-                HStack {
-                    Toggle("Show bicycle icon in menu bar", isOn: $prefs.showStatusIcon)
-                        .font(.subheadline)
-                    Spacer()
-                }
-            }
+            modeToggle
             .padding(.horizontal, 16)
             .padding(.top, 16)
             .padding(.bottom, 12)
@@ -52,6 +45,9 @@ struct PreferencesView: View {
 
     private var modeToggle: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Text("Menu Bar")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             radioButton(
                 "Show eBike count within range",
                 mode: .nearby
@@ -60,7 +56,10 @@ struct PreferencesView: View {
                 "Show eBike count at favorite stations",
                 mode: .favorites
             )
+            Toggle("Include bicycle icon", isOn: $prefs.showStatusIcon)
+                .font(.subheadline)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func radioButton(_ label: String, mode: AppMode) -> some View {
@@ -69,7 +68,7 @@ struct PreferencesView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: prefs.mode == mode ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(prefs.mode == mode ? .accent : .secondary)
+                    .foregroundStyle(prefs.mode == mode ? Color.accentColor : Color.secondary)
                     .font(.system(size: 14))
                 Text(label)
                     .font(.subheadline)
